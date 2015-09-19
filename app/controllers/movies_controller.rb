@@ -11,10 +11,29 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @class = {}
+
+    @all_ratings = []
+    @init_ratings_checkbox = {}
+    Movie.select('rating').distinct.each do |rating|
+	@all_ratings.push(rating.rating)
+	@init_ratings_checkbox[rating.rating] = 1
+    end
+
     sort = params[:sort]
-    @movies = Movie.all.order(sort)
-    @class[sort] = "hilite"
+    checked_ratings = params[:ratings]
+
+    @class = {}
+
+    if sort
+	@movies = Movie.all.order(sort)
+	@class[sort] = "hilite"
+    elsif checked_ratings
+	@movies = Movie.where(rating: checked_ratings.keys)
+	@init_ratings_checkbox = {}
+	checked_ratings.keys.each do |rate| @init_ratings_checkbox[rate]=1 end
+    else
+	@movies = Movie.all
+    end
   end
 
   def new

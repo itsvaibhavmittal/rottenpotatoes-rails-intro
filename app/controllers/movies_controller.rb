@@ -13,27 +13,53 @@ class MoviesController < ApplicationController
   def index
 
     @all_ratings = []
-    @init_ratings_checkbox = {}
+    #@init_ratings_checkbox = {}
     Movie.select('rating').distinct.each do |rating|
 	@all_ratings.push(rating.rating)
-	@init_ratings_checkbox[rating.rating] = 1
+	#@init_ratings_checkbox[rating.rating] = 1
     end
+
+    redirect = false
 
     sort = params[:sort]
-    checked_ratings = params[:ratings]
+    if sort
+	session[:sort] = sort
+    elsif session[:sort]
+	sort = session[:sort]
+	redirect = true
+    else 
+	sort = nil
+    end
+
+    checked_ratings_hash = {}
+    if params[:ratings]
+	checked_ratings_hash = params[:ratings]
+	session[:ratings] = params[:ratings]
+    elsif session[:ratings]
+	checked_ratings_hash = session[:ratings]
+	redirect = true
+    else
+	@all_ratings.each do |rating| checked_ratings_hash[rating]=1 end
+	redirect = nil
+    end
+
+    if redirect
+	flash.keep
+	redirect_to movies_path :sort=>sort, :ratings=>checked_ratings_hash
+    end
 
     @class = {}
-
+    #call model according to parameters
     if sort
-	@movies = Movie.all.order(sort)
+	@movies = Movie.where(rating: checked_ratings_hash.keys).order(sort)
 	@class[sort] = "hilite"
-    elsif checked_ratings
-	@movies = Movie.where(rating: checked_ratings.keys)
-	@init_ratings_checkbox = {}
-	checked_ratings.keys.each do |rate| @init_ratings_checkbox[rate]=1 end
     else
-	@movies = Movie.all
+	@movies = Movie.where(rating: checked_ratings_hash.keys)
     end
+
+    @init_ratings_checkbox = {}
+    checked_ratings_hash.keys.each do |rate| @init_ratings_checkbox[rate]=1 end    
+
   end
 
   def new
